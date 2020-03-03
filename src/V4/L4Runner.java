@@ -22,15 +22,30 @@ public class L4Runner {
                 {'T', 'X', 'U', 'N', 'H'}
         };
 
-        char[][] failedBoard = {
+        char[][] failedBoard1 = {
                 "ABE".toCharArray(),
                 "CFD".toCharArray()
-        }, failedSln = {"ABC".toCharArray(),"DEF".toCharArray()};
+        }, failedSln1 = {"ABC".toCharArray(),"DEF".toCharArray()};
 
 
-        //LoopoverSolver loopover = new LoopoverSolver(failedBoard, failedSln);
+        char [][] failedBoard2 = {
+                "4XJMN3Z".toCharArray(),
+                "RECVSDF".toCharArray(),
+                "2PW8KGU".toCharArray(),
+                "1IHTY65".toCharArray(),
+                "BQOLA70".toCharArray()
+        }, failedSln2 = {
+                "ABCDEFG".toCharArray(),
+                "HIJKLMN".toCharArray(),
+                "OPQRSTU".toCharArray(),
+                "VWXYZ01".toCharArray(),
+                "2345678".toCharArray()
+        };
+
+        //LoopoverSolver loopover = new LoopoverSolver(failedBoard1, failedSln1);
+        LoopoverSolver loopover = new LoopoverSolver(failedBoard2, failedSln2);
         //LoopoverSolver loopover = new LoopoverSolver(problematicBoard, solvedBoard);
-        LoopoverSolver loopover = new LoopoverSolver(mixedUpBoard, solvedBoard);
+        //LoopoverSolver loopover = new LoopoverSolver(mixedUpBoard, solvedBoard);
 
         System.out.println("board = \n" + loopover);
         System.out.println();

@@ -141,7 +141,7 @@ public class LoopoverSolver {
                     printboard();
                     rotateRow(row_num, loc[1] - col_num );
                     printboard();
-                    rotateColumn(row_num, 1);
+                    rotateColumn(last_col, 1);
                     printboard();
                     rotateRow(row_num, col_num-last_col ); //moves solved bit all the way left
                     printboard();
