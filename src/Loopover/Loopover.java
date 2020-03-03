@@ -3,13 +3,13 @@ package Loopover;
 
 import java.util.*;
 
-public class Loopover
+class Loopover
 {
     private LinkedList<LinkedList<Square>> gameBoard = new LinkedList<>();
     private Square startingspot;
     Loopover(char[][] mixedUpBoard, char[][] solvedBoard){
         for (int i = 0; i < mixedUpBoard.length; i++) {
-            gameBoard.add(new LinkedList<Square>());
+            gameBoard.add(new LinkedList<>());
             for (int j = 0; j < mixedUpBoard[i].length; j++) {
                 Square sq = new Square(mixedUpBoard[i][j]);
                 gameBoard.get(i).add(sq);
@@ -39,7 +39,7 @@ public class Loopover
 
     List<String> solve()
     {
-        LinkedList<String> moves = new LinkedList<String>();
+        LinkedList<String> moves = new LinkedList<>();
 
         sortDiagonal();
 
@@ -62,7 +62,11 @@ public class Loopover
             }
         }
         shiftRow(pos[1], difference[1]);
-//        shiftColumn(pos[0], difference[0]);
+        printBoard();
+        pos=locate(letr);
+        shiftRow(pos[1], -1);
+        printBoard();
+//        shiftColumn((pos[0]+difference[1])%5, difference[0]);
 //        System.out.println("game-state = \n" + this);
     }
 
@@ -71,9 +75,12 @@ public class Loopover
         for (int i = 0; i < Math.abs(shiftby); i++) {
 
             if (shiftby > 0){
+                System.out.println("Shifting right...\n");
                 temp.up = gameBoard.get(rownum).getLast().right.up;
                 temp.down = gameBoard.get(rownum).getLast().right.down;
             }else{
+                System.out.println("Shifting left...\n");
+                //gameBoard.` `
                 temp.up = gameBoard.get(rownum).getLast().left.up;
                 temp.down = gameBoard.get(rownum).getLast().left.down;
             }
@@ -123,9 +130,13 @@ public class Loopover
             }
 
 
-            for (LinkedList<Square> row: gameBoard
-                 ) {
+            for (int j = 0; j < gameBoard.size() -1; j++) {
+                LinkedList<Square> row = gameBoard.get(j);
                 Square sq = row.get(colnum);
+
+                sq.left.right = shiftby > 0? sq.up : sq.down;
+                sq.right.left = shiftby > 0? sq.up : sq.down;
+                System.out.print("");
                 sq.left = shiftby > 0? sq.down.left : sq.up.left;
                 sq.right = shiftby > 0? sq.down.right : sq.up.right;
 
@@ -143,21 +154,38 @@ public class Loopover
                     sq.up.left.right = sq;
                     sq.up.right.left = sq;
                 }
+                System.out.print("");
             }
             gameBoard.getLast().get(colnum).left = temp.left;
             gameBoard.getLast().get(colnum).right = temp.right;
+            System.out.print("");
         }
     }
 
     private int [] locate(char letr){
-        for (int y = 0; y < gameBoard.size(); y++)
-            for (int x = 0; x < gameBoard.get(y).size(); x++)
-                if (gameBoard.get(y).get(x).value == letr)
+        Square row_head = startingspot, row_explorer;
+        int x,y=0;
+        do {
+            /*System.out.println("startingspot = " + startingspot.value);
+            System.out.println("row_head = " + row_head.value);
+            System.out.println("\n");*/
+            row_explorer = row_head;
+            x=0;
+            do {
+                if (row_explorer.value == letr)
                     return new int[]{x,y};
-        return new int[]{-1, -1};
+                row_explorer = row_explorer.right;
+                ++x;
+            } while (row_explorer != row_head);
+            System.out.println();
+            //sc.nextLine();
+            row_head = row_head.down;
+            ++y;
+        } while (row_head != startingspot);
+        return new int[]{-1,-1};
     }
 
-    public void printBoard(){
+    private void printBoard(){
         Scanner sc = new Scanner(System.in);
         Square row_head = startingspot, row_explorer;
         do {
@@ -177,6 +205,7 @@ public class Loopover
     }
 
 
+/*
     @Override
     public String toString() {
         StringBuilder me = new StringBuilder();
@@ -192,6 +221,7 @@ public class Loopover
         } while (row_head != startingspot);
         return me.toString();
     }
+*/
 
 
     static class Square{
