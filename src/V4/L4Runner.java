@@ -1,6 +1,8 @@
 package V4;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 
 public class L4Runner {
     public static void main(String[] args) {
@@ -13,8 +15,8 @@ public class L4Runner {
         };
 
 
-        char[][] mixedUpBoard = generateBoard();
-        char[][] problematicBoard = {
+        char[][] mixedUpBoard = generateBoard(), problematicSln1 = solvedBoard;
+        char[][] problematicBoard1 = {
                 {'K', 'C', 'S', 'I', 'Y'},
                 {'P', 'E', 'J', 'D', 'Q'},
                 {'V', 'F', 'M', 'O', 'L'},
@@ -42,9 +44,41 @@ public class L4Runner {
                 "2345678".toCharArray()
         };
 
+        char [][] failedBoard3 = {
+                "MQGJLCPBO".toCharArray(),
+                "DFNAIKRHE".toCharArray()
+        }, failedSln3 = {
+                "ABCDEFGHI".toCharArray(),
+                "JKLMNOPQR".toCharArray()
+        };
+        
+        char [][] problematicBoard2 = {
+                "X73P".toCharArray(),
+                "GU5D".toCharArray(),
+                "VIRE".toCharArray(),
+                "CYF4".toCharArray(),
+                "SMZ6".toCharArray(),
+                "8ATH".toCharArray(),
+                "LN10".toCharArray(),
+                "9QOJ".toCharArray(),
+                "BW2K".toCharArray(),
+        }, problematicSln2 = {
+                "ABCD".toCharArray(),
+                "EFGH".toCharArray(),
+                "IJKL".toCharArray(),
+                "MNOP".toCharArray(),
+                "QRST".toCharArray(),
+                "UVWX".toCharArray(),
+                "YZ01".toCharArray(),
+                "2345".toCharArray(),
+                "6789".toCharArray()
+        };
+        
         //LoopoverSolver loopover = new LoopoverSolver(failedBoard1, failedSln1);
-        LoopoverSolver loopover = new LoopoverSolver(failedBoard2, failedSln2);
-        //LoopoverSolver loopover = new LoopoverSolver(problematicBoard, solvedBoard);
+        //LoopoverSolver loopover = new LoopoverSolver(failedBoard2, failedSln2);
+        //LoopoverSolver loopover = new LoopoverSolver(failedBoard3, failedSln3);
+        LoopoverSolver loopover = new LoopoverSolver(problematicBoard1, problematicSln1);
+        //LoopoverSolver loopover = new LoopoverSolver(problematicBoard2, problematicSln2);
         //LoopoverSolver loopover = new LoopoverSolver(mixedUpBoard, solvedBoard);
 
         System.out.println("board = \n" + loopover);
@@ -74,7 +108,7 @@ public class L4Runner {
                     System.out.print(s);
                     first = false;
                 } else
-                    System.out.print(", " + s);
+                    System.out.print("" + s);
             }
             System.out.println(">\n");
         }

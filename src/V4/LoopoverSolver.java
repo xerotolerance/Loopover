@@ -1,13 +1,19 @@
 package V4;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 public class LoopoverSolver {
     private Node entry_point;
-    private ArrayList<String> moveslist = new ArrayList<>();
-    private Hashtable<String, Node> quick_lookup = new Hashtable<>();
+    private final ArrayList<String> moveslist = new ArrayList<>();
+    private final Hashtable<String, Node> quick_lookup = new Hashtable<>();
 
-    private char[][] mixedUpBoard, solvedBoard;
+    private final char[][] mixedUpBoard;
+    private final char[][] solvedBoard;
 
     LoopoverSolver(char[][] mixedUpBoard, char[][] solvedBoard) {
         this.mixedUpBoard = mixedUpBoard;
@@ -71,61 +77,78 @@ public class LoopoverSolver {
 
                 if (row_num < solvedBoard.length - 1){
                     if (row_num == 0){
-                    if (col_shift != 0){
-                        if (loc[0] != row_num)
-                            rotateRow(loc[0], col_shift);
-                        else{
-                            rotateColumn(loc[1], 1);
-                            rotateRow(loc[0], -col_shift);
-                            rotateColumn(loc[1], -1);
-                            rotateRow(loc[0], col_shift);
-                            System.out.println();
+                        if (col_shift != 0){
+                            if (loc[0] != row_num)
+                                rotateRow(loc[0], col_shift);
+                            else{
+                                rotateColumn(loc[1], 1);
+                                rotateRow(loc[0], -col_shift);
+                                rotateColumn(loc[1], -1);
+                                rotateRow(loc[0], col_shift);
+                                System.out.println();
+                            }
+                            printboard();
                         }
-                        printboard();
-                    }
 
-                    if (row_shift != 0){
-                        rotateColumn(loc[1] + col_shift, row_shift);
-                        printboard();
-                    }
-                }
-                    else{
-                    System.out.println();
-                    if (row_shift != 0){
-                        if (col_num != loc[1]){
-                            rotateColumn(col_num, -row_shift);
+                        if (row_shift != 0){
+                            rotateColumn(loc[1] + col_shift, row_shift);
                             printboard();
-                            rotateRow(loc[0], col_shift);
-                            printboard();
-                            rotateColumn(col_num, row_shift);
-                        }else{
-                            rotateRow(loc[0], 1);
-                            printboard();
-                            rotateColumn(loc[1], -row_shift);
-                            printboard();
-                            rotateRow(loc[0], -1);
-                            printboard();
-                            rotateColumn(loc[1], row_shift);
                         }
                     }
                     else{
-                        rotateColumn(loc[1],1);
-                        printboard();
-                        rotateColumn(col_num, 1);
-                        printboard();
-                        rotateRow(loc[0]+1, col_shift);
-                        printboard();
-                        rotateColumn(loc[1],-1);
-                        printboard();
-                        rotateColumn(col_num, -1);
+                        System.out.println();
+                        if (row_shift != 0){
+                            if (col_num != loc[1]){
+                                rotateColumn(col_num, -row_shift);
+                                printboard();
+                                rotateRow(loc[0], col_shift);
+                                printboard();
+                                rotateColumn(col_num, row_shift);
+                                rotateRow(loc[0], -col_shift);
+                            }else{
+                                rotateRow(loc[0], 1);
+                                printboard();
+                                rotateColumn(loc[1], -row_shift);
+                                printboard();
+                                rotateRow(loc[0], -1);
+                                printboard();
+                                rotateColumn(loc[1], row_shift);
+                                rotateRow(loc[0], 1);
+                            }
+                        }
+                        else{
+                            rotateColumn(loc[1],1);
+                            printboard();
+                            rotateColumn(col_num, 1);
+                            printboard();
+                            rotateRow(loc[0]+1, col_shift);
+                            printboard();
+                            rotateColumn(loc[1],-1);
+                            printboard();
+                            rotateColumn(col_num, -1);
+                            printboard();
+                            rotateRow(loc[0]+1, -col_shift);
+                        }
                         printboard();
                     }
-                    printboard();
                 }
-                }else{
+                else{
                     System.out.println("--------------------------");
-                    if (loc[1] == col_num)
+
+                    if (loc[1] == col_num && loc[0] == row_num) // row check accounts guards against false positives
                         continue;
+
+                    if (col_num == last_col -1){
+                        System.out.println("Entering Interactive mode...\n");
+                        LoopoverSolver.interactiveMode(this);
+                    }
+                    else if (col_num == last_col){
+                        rotateRow(row_num, col_shift);
+                        printboard();
+                        rotateColumn(last_col, row_shift);
+                        printboard();
+                        break;
+                    }
                     if (col_num == 0){
                         rotateRow(row_num, col_shift);
                         printboard();
@@ -151,6 +174,7 @@ public class LoopoverSolver {
                             rotateRow(row_num, 1);
                         } else {
                             System.out.println();
+
                         }
                         printboard();
                     }
@@ -179,6 +203,43 @@ public class LoopoverSolver {
         return moveslist;
     }
 
+    public static void interactiveMode(LoopoverSolver l){
+        Scanner sc = new Scanner(System.in);
+        String instruction;
+        Pattern d = sc.delimiter();
+        Stream<String> s;
+        int id;
+        l.printboard();
+        while (sc.hasNext()) {
+
+            try {
+                sc.useDelimiter("");
+                instruction = sc.next("[a-zA-Z]");
+                id = sc.nextInt();
+                //sc.skip(d);
+
+            } catch (Exception e){
+                sc.next();
+                continue;
+            }
+
+            if (id >= l.solvedBoard.length && id >= l.solvedBoard[0].length)
+                continue;
+
+            if (instruction.equalsIgnoreCase("L") && id < l.solvedBoard.length)
+                l.rotateRow(id,-1);
+            else if (instruction.equalsIgnoreCase("R") && id < l.solvedBoard.length)
+                l.rotateRow(id,1);
+            else if (instruction.equalsIgnoreCase("U") && id < l.solvedBoard[0].length)
+                l.rotateColumn(id, -1);
+            else if (instruction.equalsIgnoreCase("D") && id < l.solvedBoard[0].length)
+                l.rotateColumn(id, 1);
+            else
+                System.out.println("out of range...");
+            l.printboard();
+            System.out.println();
+        }
+    }
 
     @Override
     public String toString() {
