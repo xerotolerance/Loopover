@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.*;
 
 public class Loopover {
-    protected static class Node{
+    private static class Node{
         int row_num = -1, col_num = -1;
         Node up = null, down = null, left = null, right = null;
         char value = '?';
@@ -66,6 +66,8 @@ public class Loopover {
     private final ArrayList<String> movelist;
     private final boolean printAll;
     private final int num_rows, num_columns;
+    
+    private final static int max_num_rows = 9, max_num_columns = 9, min_num_rows = 2, min_num_columns = 2;
     Loopover (char[][] mixedUpBoard){
         printAll = false;
         num_rows = mixedUpBoard.length;
@@ -144,7 +146,7 @@ public class Loopover {
             curr.down=col_head;
         }
     }
-
+    
     @Override
     public String toString() {
         int offset, idx;
@@ -350,11 +352,16 @@ public class Loopover {
 
     public static char [][][] generateBoards(){
         //generates random board & it's solution with dimensions between 2x2 & 9x9
-        Random random = new Random();
-        return generateBoards(random.nextInt(8)+2, random.nextInt(8)+2);
+        return generateBoards(0, 0);
     }
 
     public static char [][][] generateBoards(int num_rows, int num_columns){
+        Random random = new Random();
+        if (num_rows < min_num_rows || num_rows > max_num_rows)
+            num_rows = random.nextInt(max_num_rows - min_num_rows + 1) + min_num_rows;
+        if (num_columns < min_num_columns || num_columns > max_num_columns)
+            num_columns = random.nextInt(max_num_columns - min_num_columns + 1) + min_num_columns;
+
         char [][][] scrambled_solved_pair_array = new char[2][num_rows][num_columns];
         char [] sorted_choices = new char[num_rows*num_columns];
         String upper, lower, nums, symbols;
@@ -388,7 +395,6 @@ public class Loopover {
         choices.getChars(0,choices.length(),sorted_choices,0);
         Arrays.sort(sorted_choices);
 
-        Random random = new Random();
         int idx, counter=0;
         while (choices.length()>0){
             idx = random.nextInt(choices.length());
@@ -461,6 +467,34 @@ public class Loopover {
         return true;
     }
 
+    public static void regressionTest(){ regressionTest(1000000);}
+    public static void regressionTest(int n){regressionTest(n, false);}
+    public static void regressionTest(int n, boolean printAll){regressionTest(n, 0, 0, printAll);}
+    public static void regressionTest(int n, int num_rows, int num_columns, boolean printAll){
+        char [][][] mb_sb_pair;
+        char [][] mixedupboard, solvedboard;
+        List<String> sln;
+        Instant start = Instant.now();
+        for (int i=0; i < n; i++) {
+            mb_sb_pair = generateBoards(num_rows, num_columns);
+            mixedupboard = mb_sb_pair[0];
+            solvedboard = mb_sb_pair[1];
+            //Instant local_start = Instant.now();
+            sln = solve(mixedupboard, solvedboard);
+            //Instant local_end = Instant.now();
+
+            if (verifySolution(sln, mixedupboard, solvedboard, printAll) && printAll)
+                System.out.println("Solution verified correct!\n");
+            else if(printAll)
+                System.out.println("ERR: Board is not in solved state!\n");
+            //System.out.println("Puzzle evaluated in: " + ChronoUnit.MILLIS.between(local_start, local_end) + " ms.\n");
+        }
+        Instant end = Instant.now();
+        Duration diff = Duration.between(start, end);
+        System.out.println("Evaluated "+ n +" puzzles in: " + (diff.getSeconds() + diff.getNano()/1000000000.f) + "s.\n");
+        System.out.printf("Avg time per puzzle: %1.9fs\n", diff.dividedBy(n).getSeconds() + diff.dividedBy(n).getNano()/1000000000.f);
+    }
+    
     public static void main(String [] Args){
 /*
 
@@ -566,35 +600,40 @@ public class Loopover {
                 "IJKLMNOP".toCharArray()
         };
 */
-        boolean printAll = false;
-        char [][][] mb_sb_pair;
-        char [][] mixedupboard, solvedboard;
-        List<String> sln;
-        Instant start = Instant.now();
-        int n = 1000000;
-        for (int i=0; i < n; i++) {
-            mb_sb_pair = generateBoards();
-            mixedupboard = mb_sb_pair[0];
-            solvedboard = mb_sb_pair[1];
-            //Instant local_start = Instant.now();
-            sln = solve(mixedupboard, solvedboard);
-            //Instant local_end = Instant.now();
 
-            if (verifySolution(sln, mixedupboard, solvedboard, printAll) && printAll)
-                System.out.println("Solution verified correct!\n");
-            else if(printAll)
-                System.out.println("ERR: Board is not in solved state!\n");
-            //System.out.println("Puzzle evaluated in: " + ChronoUnit.MILLIS.between(local_start, local_end) + " ms.\n");
-        }
-        Instant end = Instant.now();
-        Duration diff = Duration.between(start, end);
-        System.out.println("Evaluated "+ n +" puzzles in: " + (diff.getSeconds() + diff.getNano()/1000000000.f) + "s.\n");
-        System.out.printf("Avg time per puzzle: %1.9fs\n", diff.dividedBy(n).getSeconds() + diff.dividedBy(n).getNano()/1000000000.f);
-/*        mixedupboard = problem_board7;
-        solvedboard = solvedboard7;
-        sln = solve(mixedupboard, solvedboard);
+        /* FIXME:
+        *    Currently producing:
+        *       RBCDEA
+        *       GHIJKL
+        *       MNOPQX
+        *       STUVW3
+        *       YZ012F
+        *       456789
+        *   Instead of solvedboard8
+        * */
+        char [][] problem_board8 = {
+                "WCMDJ0".toCharArray(),
+                "ORFBA1".toCharArray(),
+                "KNGLY2".toCharArray(),
+                "PHVSE3".toCharArray(),
+                "TXQUI4".toCharArray(),
+                "Z56789".toCharArray()
+        };
+        char [][] solvedboard8 = {
+                "ABCDEF".toCharArray(),
+                "GHIJKL".toCharArray(),
+                "MNOPQR".toCharArray(),
+                "STUVWX".toCharArray(),
+                "YZ0123".toCharArray(),
+                "456789".toCharArray()
+        };
+
+        char [][] mixedupboard, solvedboard;
+        mixedupboard = problem_board8;
+        solvedboard = solvedboard8;
+        List<String> sln = solve(mixedupboard, solvedboard);
         if (verifySolution(sln, mixedupboard, solvedboard, true))
             System.out.println("Solution verified correct!\n");
-        else System.out.println("ERR: Board is not in solved state!\n");*/
+        else System.out.println("ERR: Board is not in solved state!\n");
     }
 }
