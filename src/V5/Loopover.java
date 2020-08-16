@@ -1,7 +1,5 @@
 package V5;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -369,7 +367,7 @@ public class Loopover {
                         moveToColumn(target_node.value, target_node.right.col_num);
                 }
                 // FAIL-STATE Condition
-                if (sanchk.right.down.value > target_char || intended_col_num < num_columns-2) {
+                if ( Node.ValueComparator.compare(sanchk.right.down.value, target_char) > 0 || intended_col_num < num_columns-2) {
                     moveToRow(sanchk.right.value, sanchk.right.up.row_num);
                     moveToColumn(expat_value, num_columns - 1);
                     moveToRow(expat_value, characterNodeHashMap.get(expat_value).down.row_num);
@@ -379,7 +377,7 @@ public class Loopover {
                     // FAIL-STATE: Procedure
                     if (printAll)
                         System.out.println("Entering Last-Chance mode...:\n" + this);
-                    for (int i=0; i < num_columns/2; i++) {
+                    for (int i=0; i < num_columns/2+1; i++) {
                         /* Repeat this sequence until we're back where we started or until the board is solved:
                         *  Moves: Last Row : Left
                         *         Last Col : Up
@@ -388,6 +386,11 @@ public class Loopover {
                         * */
                         moveToRow(sanchk.right.value, sanchk.right.up.row_num);
                         moveToColumn(sanchk.down.value, sanchk.down.left.col_num);
+                        if (sanchk.down.value == target_char && sanchk.down.right.value == solvedBoard[intended_row_num][intended_col_num + 1]) {
+                            if (printAll)
+                                System.out.println("Found a Solution!\n");
+                            return true;
+                        }
                         moveToRow(sanchk.right.value, sanchk.right.down.row_num);
                         moveToColumn(sanchk.down.value, sanchk.down.left.col_num);
                         if (sanchk.down.value == target_char && sanchk.down.right.value == solvedBoard[intended_row_num][intended_col_num + 1]) {
@@ -529,34 +532,6 @@ public class Loopover {
         return true;
     }
 
-    public static void regressionTest(){ regressionTest(1000000);}
-    public static void regressionTest(int n){regressionTest(n, false);}
-    public static void regressionTest(int n, boolean printAll){regressionTest(n, 0, 0, printAll);}
-    public static void regressionTest(int n, int num_rows, int num_columns, boolean printAll){
-        char [][][] mb_sb_pair;
-        char [][] mixedupboard, solvedboard;
-        List<String> sln;
-        Instant start = Instant.now();
-        for (int i=0; i < n; i++) {
-            mb_sb_pair = generateBoards(num_rows, num_columns);
-            mixedupboard = mb_sb_pair[0];
-            solvedboard = mb_sb_pair[1];
-            //Instant local_start = Instant.now();
-            sln = solve(mixedupboard, solvedboard);
-            //Instant local_end = Instant.now();
-
-            if (verifySolution(sln, mixedupboard, solvedboard, printAll) && printAll)
-                System.out.println("Solution verified correct!\n");
-            else if(printAll)
-                System.out.println("ERR: Board is not in solved state!\n");
-            //System.out.println("Puzzle evaluated in: " + ChronoUnit.MILLIS.between(local_start, local_end) + " ms.\n");
-        }
-        Instant end = Instant.now();
-        Duration diff = Duration.between(start, end);
-        System.out.println("Evaluated "+ n +" puzzles in: " + (diff.getSeconds() + diff.getNano()/1000000000.f) + "s.\n");
-        System.out.printf("Avg time per puzzle: %1.9fs\n", diff.dividedBy(n).getSeconds() + diff.dividedBy(n).getNano()/1000000000.f);
-    }
-
     public static void interactiveMode(Loopover l){
         System.out.println("\nEntering Interactive mode...\n");
         Scanner sc = new Scanner(System.in);
@@ -606,182 +581,5 @@ public class Loopover {
         }
         System.out.println("\nLeaving Interactive mode...\n");
     }
-    
-    public static void main(String [] Args){
-/*
 
-        char [][] problem_solved_board = {
-              "ABCDE".toCharArray(),
-              "FGHIJ".toCharArray(),
-              "KLMNO".toCharArray(),
-              "PQRST".toCharArray(),
-              "UVWXY".toCharArray()
-        };
-
-        // Fixed: SOLVED
-        char [][] mb = {
-                "DEWBC".toCharArray(),
-                "FGAIJ".toCharArray(),
-                "KLHNO".toCharArray(),
-                "PQMST".toCharArray(),
-                "UVRXY".toCharArray()
-        };
-
-        // Fixed: SOLVED
-        char [][] problem_board1 = {
-                "RQNOL".toCharArray(),
-                "PXTYU".toCharArray(),
-                "SAMIB".toCharArray(),
-                "FWGVC".toCharArray(),
-                "DHKJE".toCharArray()
-        };
-        // Fixed: SOLVED
-        char [][] problem_board2 = {
-                "NBPFW".toCharArray(),
-                "IUORD".toCharArray(),
-                "AMHJQ".toCharArray(),
-                "XEGCL".toCharArray(),
-                "KVSTY".toCharArray()
-        };
-        // Solved (Unsolvable)
-        char [][] problem_board3 = {
-                "MQPBA".toCharArray(),
-                "RLTNV".toCharArray(),
-                "SCEOD".toCharArray(),
-                "KFUYI".toCharArray(),
-                "XGHJW".toCharArray()
-        };
-
-
-        //FIXED: SOLVED
-        char [][] problem_board4 = {
-            "EIJK".toCharArray(),
-            "HFAC".toCharArray(),
-            "DGBL".toCharArray()
-        };
-        char [][] solvedboard4 = {
-                "ABCD".toCharArray(),
-                "EFGH".toCharArray(),
-                "IJKL".toCharArray()
-        };
-
-
-        //FIXED: (Unsolvable)
-        char [][] problem_board5 = {
-                "LBJC".toCharArray(),
-                "IKEG".toCharArray(),
-                "ADHF".toCharArray()
-        };
-        char [][] solvedboard5 = {
-                "ABCD".toCharArray(),
-                "EFGH".toCharArray(),
-                "IJKL".toCharArray()
-        };
-
-        // Fixed: (Unsolvable)
-        char[][] problem_board6 = {
-                "ac35D".toCharArray(),
-                "dTM9B".toCharArray(),
-                "COIPX".toCharArray(),
-                "0SERY".toCharArray(),
-                "UF1VJ".toCharArray(),
-                "4QA62".toCharArray(),
-                "Z7HN8".toCharArray(),
-                "WKGLb".toCharArray()
-        };
-        
-        char [][] solvedboard6 = {
-                "01234".toCharArray(),
-                "56789".toCharArray(),
-                "ABCDE".toCharArray(),
-                "FGHIJ".toCharArray(),
-                "KLMNO".toCharArray(),
-                "PQRST".toCharArray(),
-                "UVWXY".toCharArray(),
-                "Zabcd".toCharArray()
-        };
-
-        // FIXED: SOLVED
-        char [][] problem_board7 = {
-                "HBMOAPIL".toCharArray(),
-                "JGCKNFED".toCharArray()
-        };
-
-        char [][] solvedboard7 = {
-                "ABCDEFGH".toCharArray(),
-                "IJKLMNOP".toCharArray()
-        };
-
-
-        // FIXED: SOLVED
-        char [][] problem_board8 = {
-                "WCMDJ0".toCharArray(),
-                "ORFBA1".toCharArray(),
-                "KNGLY2".toCharArray(),
-                "PHVSE3".toCharArray(),
-                "TXQUI4".toCharArray(),
-                "Z56789".toCharArray()
-        };
-        char [][] solvedboard8 = {
-                "ABCDEF".toCharArray(),
-                "GHIJKL".toCharArray(),
-                "MNOPQR".toCharArray(),
-                "STUVWX".toCharArray(),
-                "YZ0123".toCharArray(),
-                "456789".toCharArray()
-        };
-*/
-        /* FIXME:
-        *    Currently producing:
-        *       ABCDEFGH^
-        *       JKLMNOPQR
-        *       STUVWXYZ0
-        *       123456789
-        *       abcdefghi
-        *       jklmnopqr
-        *       stuvwxyz)
-        *       *+,-./:;<
-         *       _=>?@[\]I
-        *   Instead of solvedboard9
-        ** * * * * */
-
-        char [][] problem_board9 = {
-                "vWcEg^TPj".toCharArray(),
-                "5\\_p1I@[r".toCharArray(),
-                "Rf>6;tCA8".toCharArray(),
-                "=nK0zMwU<".toCharArray(),
-                "7B3s,Y*l9".toCharArray(),
-                "yNLoq-+J]".toCharArray(),
-                "hV/F:?XSu".toCharArray(),
-                "x)2QbHimG".toCharArray(),
-                "O.4DZdake".toCharArray()
-        };
-
-        char [][] solvedboard9 = {
-                "ABCDEFGHI".toCharArray(),
-                "JKLMNOPQR".toCharArray(),
-                "STUVWXYZ0".toCharArray(),
-                "123456789".toCharArray(),
-                "abcdefghi".toCharArray(),
-                "jklmnopqr".toCharArray(),
-                "stuvwxyz)".toCharArray(),
-                "*+,-./:;<".toCharArray(),
-                "=>?@[\\]^_".toCharArray()
-        };
-
-
-        if (true){
-            regressionTest();
-        }
-        else {
-            char[][] mixedupboard, solvedboard;
-            mixedupboard = problem_board9;
-            solvedboard = solvedboard9;
-
-            List<String> sln = solve(mixedupboard, solvedboard, true);
-            if (verifySolution(sln, mixedupboard, solvedboard, true))
-                System.out.println("Solution verified correct!\n");
-            else System.out.println("ERR: Board is not in solved state!\n");
-        }
-    }
 }
