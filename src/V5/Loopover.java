@@ -9,6 +9,11 @@ import java.util.stream.Stream;
 import static java.lang.Character.*;
 
 public class Loopover {
+    /**
+     * Solver for Loopover Puzzles.
+     * @author CJ Maxwell
+     * @version 1.5, 2020-08-20
+     */
     private static class Node{
         int row_num = -1, col_num = -1;
         Node up = null, down = null, left = null, right = null;
@@ -395,11 +400,6 @@ public class Loopover {
             if (intended_col_num == 0)
                 moveToColumn(target_char, intended_col_num);
             else{
-                //interactiveMode(this);
-                //System.out.println();
-
-/*                for (String move:movelist)
-                    System.out.println(move);*/
                 moveToColumn(target_char, num_columns-1);
                 moveToRow(target_char, intended_row_num-1);
                 char expat_value = characterNodeHashMap.get(target_char).down.value;
@@ -437,9 +437,10 @@ public class Loopover {
                         } while (corner.value != corner_val);
                         return true;
                     };
-                    //interactiveMode(this);
-                    if (printAll)
+                    if (printAll) {
                         System.out.println("Entering Last-Chance mode...:\n" + this);
+                        System.out.println("Trying bottom row heuristic...");
+                    }
                     for (int i=0; i < num_columns/2+1; i++) {
                         /* Repeat this sequence until we're back where we started or until the board is solved:
                         *  Moves: Last Row : Left
@@ -462,6 +463,24 @@ public class Loopover {
                             return true;
                         }
                     }
+                    if (printAll) {
+                        System.out.println("Couldn't solve bottom row...:\n" + this);
+                        System.out.println("Trying last column heuristic...");
+                    }
+                    moveToRow(sanchk.right.value, sanchk.right.up.up.row_num);
+                    char expat_replacement;
+                    for (int i = 0; i < num_rows; i++){
+                        expat_replacement = sanchk.right.down.value;
+                        moveToColumn(expat_value, sanchk.right.down.col_num);
+                        moveToRow(expat_value, sanchk.right.row_num);
+                        expat_value = expat_replacement;
+                        if (checkEdgesSolved.test(sanchk.down.right, solvedBoard))
+                            return true;
+                    }
+                    if (printAll) {
+                        System.out.println("Couldn't solve last column...:\n" + this);
+                    }
+
                     if (printAll)
                         System.out.println("Couldn't Find Solution...\n");
                     if (debug)
@@ -540,7 +559,7 @@ public class Loopover {
             System.out.println("puzzle BEFORE solve: \n" + puzzle);
         for (int intended_row_num=0; intended_row_num < num_rows; intended_row_num++) {
             for (int intended_col_num=0; intended_col_num < num_columns; intended_col_num++) {
-                if (!puzzle.solvePosition(intended_row_num, intended_col_num, solvedBoard, debug_level>1)) {
+                if (!puzzle.solvePosition(intended_row_num, intended_col_num, solvedBoard, debug_level>2)) {
                     if (debug_level>0)
                         System.out.println("puzzle AT time of SURRENDER: \n" + puzzle);
                     return null;
@@ -556,7 +575,7 @@ public class Loopover {
         return verifySolution(movelist, mixedUpBoard, solvedBoard, 0);
     }
     public static boolean verifySolution(List<String> movelist, char[][] mixedUpBoard, char[][] solvedBoard, int debug_level){
-        boolean printAll = debug_level>0;
+        boolean printAll = debug_level>1;
         Loopover puzzle = new Loopover(mixedUpBoard, debug_level>1);
         if (printAll)
             System.out.println("Verification:\n============\npuzzle = \n" + puzzle);
@@ -615,7 +634,6 @@ public class Loopover {
                 sc.useDelimiter("");
                 instruction = sc.next("[a-zA-Z]");
                 id = sc.nextInt();
-                //sc.skip(d);
                 System.out.println("instruction = " + instruction + id);
 
             } catch (Exception e){
@@ -628,23 +646,22 @@ public class Loopover {
 
             if (instruction.equalsIgnoreCase("L") && id < l.num_rows) {
                 for (;curr.row_num != id;curr=curr.down);
-                l.moveToColumn(curr.value, curr.left.col_num); //l.rotateRow(id,-1);
+                l.moveToColumn(curr.value, curr.left.col_num);
             }
             else if (instruction.equalsIgnoreCase("R") && id < l.num_rows) {
                 for (;curr.row_num != id;curr=curr.down);
-                l.moveToColumn(curr.value, curr.right.col_num); //l.rotateRow(id,-1);
+                l.moveToColumn(curr.value, curr.right.col_num);
             }
             else if (instruction.equalsIgnoreCase("U") && id < l.num_columns) {
                 for (;curr.col_num != id;curr=curr.right);
-                l.moveToRow(curr.value, curr.up.row_num); //l.rotateRow(id,-1);
+                l.moveToRow(curr.value, curr.up.row_num);
             }
             else if (instruction.equalsIgnoreCase("D") && id < l.num_columns) {
                 for (;curr.col_num != id;curr=curr.right);
-                l.moveToRow(curr.value, curr.down.row_num); //l.rotateRow(id,-1);
+                l.moveToRow(curr.value, curr.down.row_num);
             }
             else
                 System.out.println("out of range...");
-            //System.out.println(l);
             System.out.println();
         }
         System.out.println("\nLeaving Interactive mode...\n");
