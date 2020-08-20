@@ -4,52 +4,108 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
-public class LoopoverTestSuite {
-    protected static class LoopoverTest {
+public class LoopoverTestSuite{
+    private static final int time_efficiency_test_default_n = 1000000;
+    protected static class LoopoverTest implements Callable<Boolean>{
+        int latest_test_num = 0;
         char [][] mb, sb;
         boolean hasSolution;
+        int debug_level;
         public LoopoverTest(char [][]mb, char[][]sb){
             this.mb = mb;
             this.sb = sb;
             this.hasSolution = sb != null;
         }
+        public LoopoverTest(char [][]mb, char[][]sb, int debug_level){
+            this.mb = mb;
+            this.sb = sb;
+            this.hasSolution = sb != null;
+            this.debug_level = debug_level;
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder grid = new StringBuilder();
+            for (char [] row : mb) {
+                for (char num : row)
+                    grid.append(num).append(' ');
+                grid.append('\n');
+            }
+            return grid.toString();
+        }
+
+        @Override
+        public Boolean call() throws Exception {
+            boolean verification;
+            List<String> sln;
+            try{
+                sln = Loopover.solve(mb, sb);
+                verification = Loopover.verifySolution(sln, mb, sb, debug_level);
+                if (verification != hasSolution) {
+                    if (debug_level>0) {
+                        System.out.println("Failed Test: \n" + this);
+                        if (hasSolution) {
+                            System.out.println("Should have at least 1 solution but 0 were found.\n");
+                        } else {
+                            System.out.println("Should have no solution but 1 was found.\n");
+                        }
+                    }
+                } else if (verification) return true;
+            }
+            catch (Exception e){
+                System.out.println(e.getMessage());
+            }
+            return false;
+        }
     }
     protected static final ArrayList<LoopoverTest> tests = new ArrayList<>();
-    public static void timeEfficiencyTest(){ timeEfficiencyTest(1000000);}
-    public static void timeEfficiencyTest(int n){
-        timeEfficiencyTest(n, false);}
-    public static void timeEfficiencyTest(int n, boolean printAll){
-        timeEfficiencyTest(n, 0, 0, printAll);}
-    public static void timeEfficiencyTest(int n, int num_rows, int num_columns, boolean printAll){
+    public static void timeEfficiencyTest() throws ExecutionException, InterruptedException { timeEfficiencyTest(time_efficiency_test_default_n);}
+    public static void timeEfficiencyTest(int n) throws ExecutionException, InterruptedException {
+        timeEfficiencyTest(n, 0);}
+    public static void timeEfficiencyTest(int n, int debug_level) throws ExecutionException, InterruptedException {
+        timeEfficiencyTest(n, 0, 0, debug_level);}
+    public static void timeEfficiencyTest(int n, int num_rows, int num_columns, int debug_level) throws ExecutionException, InterruptedException {
         char [][][] mb_sb_pair;
-        char [][] mixedupboard, solvedboard;
-        List<String> sln;
-        Instant start = Instant.now();
-        for (int i=0; i < n; i++) {
+        int num_evaluated, num_passed;
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        ArrayList<LoopoverTest> random_tests = new ArrayList<>();
+        for (int i=0; i < n; i++){
             mb_sb_pair = Loopover.generateBoards(num_rows, num_columns);
-            mixedupboard = mb_sb_pair[0];
-            solvedboard = mb_sb_pair[1];
-            //Instant local_start = Instant.now();
-            sln = Loopover.solve(mixedupboard, solvedboard);
-            //Instant local_end = Instant.now();
-
-            if (Loopover.verifySolution(sln, mixedupboard, solvedboard, printAll) && printAll)
-                System.out.println("Solution verified correct!\n");
-            else if(printAll)
-                System.out.println("ERR: Board is not in solved state!\n");
-            //System.out.println("Puzzle evaluated in: " + ChronoUnit.MILLIS.between(local_start, local_end) + " ms.\n");
+            random_tests.add(new LoopoverTest(mb_sb_pair[0], mb_sb_pair[1], debug_level));
         }
+
+        Instant start = Instant.now();
+        List<Future<Boolean>> results = executorService.invokeAll(random_tests, 2,TimeUnit.MINUTES);
         Instant end = Instant.now();
         Duration diff = Duration.between(start, end);
-        System.out.println("Evaluated "+ n +" puzzles in: " + (diff.getSeconds() + diff.getNano()/1000000000.f) + "s.\n");
+
+        results.removeIf(Future::isCancelled);
+        num_evaluated = results.size();
+        results.removeIf(t->{
+            try {
+                return !t.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            } return false;
+        });
+        num_passed = results.size();
+
+        executorService.shutdown();
+        System.out.println("Evaluated "+ num_evaluated +" of "+ n +" puzzles in: " + (diff.getSeconds() + diff.getNano()/1000000000.f) + "s.\n");
         System.out.printf("Avg time per puzzle: %1.9fs\n", diff.dividedBy(n).getSeconds() + diff.dividedBy(n).getNano()/1000000000.f);
+        System.out.printf("Avg success rate: %1.3f%%\n", (100.f * num_passed) / n );
     }
+
     public static int addTest(char[][]mb, char[][]sb){
-        tests.add(new LoopoverTest(mb, sb));
+        return addTest(mb, sb, 0);
+    }
+    public static int addTest(char[][]mb, char[][]sb, int debug_level){
+        tests.add(new LoopoverTest(mb, sb, debug_level));
         return tests.size();
     }
-    public static int loadTests(){
+    public static int loadTests(int debug_level){
         char [][] sb_5x5 = {
                 "ABCDE".toCharArray(),
                 "FGHIJ".toCharArray(),
@@ -66,7 +122,7 @@ public class LoopoverTestSuite {
                 "PQMST".toCharArray(),
                 "UVRXY".toCharArray()
         };
-        tests.add(new LoopoverTest(mb, sb_5x5));
+        addTest(mb, sb_5x5, debug_level);
         // Fixed: SOLVED
         char [][] problem_board1 = {
                 "RQNOL".toCharArray(),
@@ -75,7 +131,7 @@ public class LoopoverTestSuite {
                 "FWGVC".toCharArray(),
                 "DHKJE".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board1, sb_5x5));
+        addTest(problem_board1, sb_5x5, debug_level);
         // Fixed: SOLVED
         char [][] problem_board2 = {
                 "NBPFW".toCharArray(),
@@ -84,7 +140,7 @@ public class LoopoverTestSuite {
                 "XEGCL".toCharArray(),
                 "KVSTY".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board2, sb_5x5));
+        addTest(problem_board2, sb_5x5, debug_level);
         // Solved (Unsolvable)
         char [][] problem_board3 = {
                 "MQPBA".toCharArray(),
@@ -93,7 +149,7 @@ public class LoopoverTestSuite {
                 "KFUYI".toCharArray(),
                 "XGHJW".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board3, sb_5x5));
+        addTest(problem_board3, sb_5x5, debug_level);
 
         //FIXED: SOLVED
         char [][] problem_board4 = {
@@ -106,7 +162,7 @@ public class LoopoverTestSuite {
                 "EFGH".toCharArray(),
                 "IJKL".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board4, sb_3x4));
+        addTest(problem_board4, sb_3x4, debug_level);
 
         //FIXED: (Unsolvable)
         char [][] problem_board5 = {
@@ -114,12 +170,7 @@ public class LoopoverTestSuite {
                 "IKEG".toCharArray(),
                 "ADHF".toCharArray()
         };
-        char [][] solvedboard5 = {
-                "ABCD".toCharArray(),
-                "EFGH".toCharArray(),
-                "IJKL".toCharArray()
-        };
-        tests.add(new LoopoverTest(problem_board5, sb_3x4));
+        addTest(problem_board5, sb_3x4, debug_level);
         // Fixed: (Unsolvable)
         char[][] problem_board6 = {
                 "ac35D".toCharArray(),
@@ -142,7 +193,7 @@ public class LoopoverTestSuite {
                 "UVWXY".toCharArray(),
                 "Zabcd".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board6, sb_8x5));
+        addTest(problem_board6, sb_8x5, debug_level);
         // FIXED: SOLVED
         char [][] problem_board7 = {
                 "HBMOAPIL".toCharArray(),
@@ -153,7 +204,7 @@ public class LoopoverTestSuite {
                 "ABCDEFGH".toCharArray(),
                 "IJKLMNOP".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board7, sb_2x8));
+        addTest(problem_board7, sb_2x8, debug_level);
 
         // FIXED: SOLVED
         char [][] problem_board8 = {
@@ -172,7 +223,7 @@ public class LoopoverTestSuite {
                 "YZ0123".toCharArray(),
                 "456789".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board8, sb_6x6));
+        addTest(problem_board8, sb_6x6, debug_level);
 
         /* FIXME:
          *    Currently producing:
@@ -211,7 +262,7 @@ public class LoopoverTestSuite {
                 "*+,-./:;<".toCharArray(),
                 "=>?@[\\]^_".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board9, sb_9x9));
+        addTest(problem_board9, sb_9x9, debug_level);
 
         char [][] problem_board10 = {
                 "IGMHFDAPJ".toCharArray(),
@@ -222,49 +273,75 @@ public class LoopoverTestSuite {
                 "ABCDEFGHI".toCharArray(),
                 "JKLMNOPQR".toCharArray()
         };
-        tests.add(new LoopoverTest(problem_board10, sb_2x9));
+        addTest(problem_board10, sb_2x9, debug_level);
+
+        char[][] problem_board11 = {
+                "WCMDJ".toCharArray(),
+                "ORFBA".toCharArray(),
+                "KNGLY".toCharArray(),
+                "PHVSE".toCharArray(),
+                "TXQUI".toCharArray()
+        };
+        addTest(problem_board11, sb_5x5, debug_level);
+
         return tests.size();
     }
-    public static boolean regressionTest(){
-        boolean allPassed = true; int num_passed=0, test_num=0;
-        List<String> sln;
-        boolean verification;
-        for (LoopoverTest t : tests){
-            sln = Loopover.solve(t.mb, t.sb);
-            verification = Loopover.verifySolution(sln, t.mb, t.sb);
-            if (verification != t.hasSolution) {
-                System.out.println("Failed Test "+test_num+":\n");
-                for (char [] row : t.mb) {
-                    for (char c : row)
-                        System.out.print(c + " ");
-                    System.out.println();
-                }
-                if (t.hasSolution) {
-                    System.out.println("Should have at least 1 solution but 0 were found.\n");
-                } else {
-                    System.out.println("Should have no solution but 1 was found.\n");
-                }
-                allPassed = false;
-            } else num_passed++;
-            test_num++;
-        }
-        System.out.println("Completed " + num_passed + " of " + tests.size() + "tests  successfully.\n");
-        return allPassed;
+    public static boolean regressionTest() throws ExecutionException, InterruptedException {
+        return regressionTest(0);
     }
-    public static void main(String [] Args){
-
+    public static boolean regressionTest(int debug_level) throws ExecutionException, InterruptedException {
+        if (tests.isEmpty())
+            loadTests(debug_level);
+        int num_passed=0;
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        List<Future<Boolean>> results = executorService.invokeAll(tests, 2, TimeUnit.MINUTES);
+        results.removeIf(t-> {
+            try {
+                return t.isCancelled() || !t.get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+            return false;
+        });
+        num_passed = results.size();
+        System.out.println("Completed " + num_passed + " of " + tests.size() + " tests successfully.\n");
+        executorService.shutdown();
+        return num_passed == tests.size();
+    }
+    public static void main(String [] Args) throws ExecutionException, InterruptedException {
         if (true){
-            loadTests();
-            regressionTest();
-            //LoopoverTestSuite.timeEfficiencyTest();
+            regressionTest(1);
+            LoopoverTestSuite.timeEfficiencyTest();
         }
         else {
-            char[][] mixedupboard, solvedboard;
-            mixedupboard = null;
-            solvedboard = null;
+            char [][] problem_board12 = {
+                    "AFV".toCharArray(),
+                    "OQR".toCharArray(),
+                    "JLU".toCharArray(),
+                    "IHB".toCharArray(),
+                    "NKW".toCharArray(),
+                    "PXT".toCharArray(),
+                    "DGM".toCharArray(),
+                    "ESC".toCharArray()
+            };
 
-            List<String> sln = Loopover.solve(mixedupboard, solvedboard, true);
-            if (Loopover.verifySolution(sln, mixedupboard, solvedboard, true))
+            char [][] solvedboard12 = {
+                    "ABC".toCharArray(),
+                    "DEF".toCharArray(),
+                    "GHI".toCharArray(),
+                    "JKL".toCharArray(),
+                    "MNO".toCharArray(),
+                    "PQR".toCharArray(),
+                    "STU".toCharArray(),
+                    "VWX".toCharArray()
+            };
+
+            char[][] mixedupboard, solvedboard;
+            mixedupboard = problem_board12;
+            solvedboard = solvedboard12;
+
+            List<String> sln = Loopover.solve(mixedupboard, solvedboard, 2);
+            if (Loopover.verifySolution(sln, mixedupboard, solvedboard, 2))
                 System.out.println("Solution verified correct!\n");
             else System.out.println("ERR: Board is not in solved state!\n");
         }

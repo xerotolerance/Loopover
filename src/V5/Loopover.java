@@ -1,6 +1,8 @@
 package V5;
 
 import java.util.*;
+import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
@@ -85,7 +87,6 @@ public class Loopover {
         }
         private static final Comparator<Character> ValueComparator = Node::compare;
     }
-
     private final HashMap<Character, Node> characterNodeHashMap;
     private final ArrayList<String> movelist;
     private final boolean printAll;
@@ -189,92 +190,134 @@ public class Loopover {
         grid.append('\n');
         return grid.toString();
     }
-
-    private void moveToColumn(char target_char, int intended_col_num) {
-        char tmp_char;
-        Node current_node = null;
-        int direction_flag = 0; // < 0 means left, > 0 means right, 0 means no move made
-        while (characterNodeHashMap.get(target_char).col_num != intended_col_num){
-            if (characterNodeHashMap.get(target_char).col_num < intended_col_num) {
-                direction_flag = 1;
-                tmp_char = characterNodeHashMap.get(target_char).left.value;
-                current_node = characterNodeHashMap.get(target_char).left;
-                while (true){
-                    current_node.value = current_node.left.value;
-                    current_node = current_node.left;
-                    if (current_node.value == target_char){
-                        current_node.value = tmp_char;
-                        break;
-                    }
+    private void moveToColumn(char target_char, int intended_col_num){moveToColumn(target_char, intended_col_num, true);}
+    private void moveToColumn(char target_char, int intended_col_num, boolean record_move) {
+        Node target_node;
+        int dist_left, dist_right;
+        Consumer<Character> moveRight = (tar_char) -> {
+            char tmp_char = characterNodeHashMap.get(tar_char).left.value;
+            Node current_node = characterNodeHashMap.get(tar_char).left;
+            while (true){
+                current_node.value = current_node.left.value;
+                current_node = current_node.left;
+                if (current_node.value == target_char){
+                    current_node.value = tmp_char;
+                    break;
                 }
             }
-            else {
-                direction_flag = -1;
-                tmp_char = characterNodeHashMap.get(target_char).right.value;
-                current_node = characterNodeHashMap.get(target_char).right;
-                while (true){
-                    current_node.value = current_node.right.value;
-                    current_node = current_node.right;
-                    if (current_node.value == target_char){
-                        current_node.value = tmp_char;
-                        break;
-                    }
-                }
-            }
-
             while (true) {
                 assert current_node != null;
                 if (characterNodeHashMap.get(current_node.value).value == current_node.value) break;
                 current_node = characterNodeHashMap.replace(current_node.value, current_node);
             }
+        };
+        Consumer<Character> moveLeft = (tar_char) -> {
+            char tmp_char = characterNodeHashMap.get(target_char).right.value;
+            Node current_node = characterNodeHashMap.get(target_char).right;
+            while (true){
+                current_node.value = current_node.right.value;
+                current_node = current_node.right;
+                if (current_node.value == target_char){
+                    current_node.value = tmp_char;
+                    break;
+                }
+            }
+            while (true) {
+                assert current_node != null;
+                if (characterNodeHashMap.get(current_node.value).value == current_node.value) break;
+                current_node = characterNodeHashMap.replace(current_node.value, current_node);
+            }
+        };
 
-            if (direction_flag > 0)
-                movelist.add("R"+ current_node.row_num);
-            else movelist.add("L"+ current_node.row_num);
+        while (true){
+            target_node = characterNodeHashMap.get(target_char);
+            if (target_node.col_num == intended_col_num)
+                break;
+            
+            if (target_node.col_num > intended_col_num) {
+                dist_left = target_node.col_num - intended_col_num;
+                dist_right = num_columns - dist_left;
+            }
+            else{
+                dist_right = intended_col_num - target_node.col_num;
+                dist_left = num_columns - dist_right;
+            }
+                
+            if (dist_left < dist_right) {
+                moveLeft.accept(target_char);
+                if (record_move) movelist.add("L" + target_node.row_num);
+            }
+            else {
+                moveRight.accept(target_char);
+                if (record_move) movelist.add("R" + target_node.row_num);
+            }
+
             if (printAll)
                 System.out.println(this);
         }
     }
-
-    private void moveToRow(char target_char, int intended_row_num) {
-        char tmp_char;
-        Node current_node=null;
-        int direction_flag = 0; // < 0 means up, > 0 means down, 0 means no move made
-        while (characterNodeHashMap.get(target_char).row_num != intended_row_num){
-            if (characterNodeHashMap.get(target_char).row_num < intended_row_num) {
-                direction_flag = 1;
-                tmp_char = characterNodeHashMap.get(target_char).up.value;
-                current_node = characterNodeHashMap.get(target_char).up;
-                while (true){
-                    current_node.value = current_node.up.value;
-                    current_node = current_node.up;
-                    if (current_node.value == target_char){
-                        current_node.value = tmp_char;
-                        break;
-                    }
+    private void moveToRow(char target_char, int intended_row_num){moveToRow(target_char, intended_row_num, true);}
+    private void moveToRow(char target_char, int intended_row_num, boolean record_move) {
+        Node target_node;
+        int dist_up, dist_down;
+        Consumer<Character> moveDown = (tar_char) -> {
+            char tmp_char = characterNodeHashMap.get(tar_char).up.value;
+            Node current_node = characterNodeHashMap.get(tar_char).up;
+            while (true){
+                current_node.value = current_node.up.value;
+                current_node = current_node.up;
+                if (current_node.value == target_char){
+                    current_node.value = tmp_char;
+                    break;
                 }
+            }
+            while (true) {
+                assert current_node != null;
+                if (characterNodeHashMap.get(current_node.value).value == current_node.value) break;
+                current_node = characterNodeHashMap.replace(current_node.value, current_node);
+            }
+        };
+        Consumer<Character> moveUp = (tar_char) -> {
+            char tmp_char = characterNodeHashMap.get(target_char).down.value;
+            Node current_node = characterNodeHashMap.get(target_char).down;
+            while (true){
+                current_node.value = current_node.down.value;
+                current_node = current_node.down;
+                if (current_node.value == target_char){
+                    current_node.value = tmp_char;
+                    break;
+                }
+            }
+            while (true) {
+                assert current_node != null;
+                if (characterNodeHashMap.get(current_node.value).value == current_node.value) break;
+                current_node = characterNodeHashMap.replace(current_node.value, current_node);
+            }
+        };
+
+        while (true){
+            target_node = characterNodeHashMap.get(target_char);
+            if (target_node.row_num == intended_row_num)
+                break;
+
+            if (target_node.row_num > intended_row_num) {
+                dist_up = target_node.row_num - intended_row_num;
+                dist_down = num_rows - dist_up;
+            }
+            else{
+                dist_down = intended_row_num - target_node.row_num;
+                dist_up = num_rows - dist_down;
+            }
+
+            if (dist_up < dist_down) {
+                moveUp.accept(target_char);
+                if (record_move) movelist.add("U" + target_node.col_num);
             }
             else {
-                direction_flag = -1;
-                tmp_char = characterNodeHashMap.get(target_char).down.value;
-                current_node = characterNodeHashMap.get(target_char).down;
-                while (true){
-                    current_node.value = current_node.down.value;
-                    current_node = current_node.down;
-                    if (current_node.value == target_char){
-                        current_node.value = tmp_char;
-                        break;
-                    }
-                }
+                moveDown.accept(target_char);
+                if (record_move) movelist.add("D" + target_node.col_num);
             }
-            while (characterNodeHashMap.get(current_node.value).value != current_node.value){
-                Node tmp = characterNodeHashMap.remove(current_node.value);
-                characterNodeHashMap.put(current_node.value, current_node);
-                current_node = tmp;
-            }
-            if (direction_flag > 0)
-                movelist.add("D"+ current_node.col_num);
-            else movelist.add("U"+ current_node.col_num);
+
             if (printAll)
                 System.out.println(this);
         }
@@ -352,6 +395,11 @@ public class Loopover {
             if (intended_col_num == 0)
                 moveToColumn(target_char, intended_col_num);
             else{
+                //interactiveMode(this);
+                //System.out.println();
+
+/*                for (String move:movelist)
+                    System.out.println(move);*/
                 moveToColumn(target_char, num_columns-1);
                 moveToRow(target_char, intended_row_num-1);
                 char expat_value = characterNodeHashMap.get(target_char).down.value;
@@ -375,6 +423,21 @@ public class Loopover {
                 }
                 else{
                     // FAIL-STATE: Procedure
+                    BiPredicate<Node, char[][]> checkEdgesSolved = (corner, solvedboard)->{
+                        char corner_val = corner.value;
+                        do {
+                            if (corner.value != solvedBoard[corner.row_num][corner.col_num])
+                                return false;
+                            corner = corner.left;
+                        } while (corner.value != corner_val);
+                        do {
+                            if (corner.value != solvedBoard[corner.row_num][corner.col_num])
+                                return false;
+                            corner = corner.up;
+                        } while (corner.value != corner_val);
+                        return true;
+                    };
+                    //interactiveMode(this);
                     if (printAll)
                         System.out.println("Entering Last-Chance mode...:\n" + this);
                     for (int i=0; i < num_columns/2+1; i++) {
@@ -386,14 +449,14 @@ public class Loopover {
                         * */
                         moveToRow(sanchk.right.value, sanchk.right.up.row_num);
                         moveToColumn(sanchk.down.value, sanchk.down.left.col_num);
-                        if (sanchk.down.value == target_char && sanchk.down.right.value == solvedBoard[intended_row_num][intended_col_num + 1]) {
+                        if (checkEdgesSolved.test(sanchk.down.right, solvedBoard)) {
                             if (printAll)
                                 System.out.println("Found a Solution!\n");
                             return true;
                         }
                         moveToRow(sanchk.right.value, sanchk.right.down.row_num);
                         moveToColumn(sanchk.down.value, sanchk.down.left.col_num);
-                        if (sanchk.down.value == target_char && sanchk.down.right.value == solvedBoard[intended_row_num][intended_col_num + 1]) {
+                        if (checkEdgesSolved.test(sanchk.down.right, solvedBoard)) {
                             if (printAll)
                                 System.out.println("Found a Solution!\n");
                             return true;
@@ -468,32 +531,33 @@ public class Loopover {
         return scrambled_solved_pair_array;
     }
     public static List<String> solve(char[][] mixedUpBoard, char[][] solvedBoard) {
-        return solve(mixedUpBoard, solvedBoard, false);
+        return solve(mixedUpBoard, solvedBoard, 0);
     }
-    public static List<String> solve(char[][] mixedUpBoard, char[][] solvedBoard, boolean debug) {
+    public static List<String> solve(char[][] mixedUpBoard, char[][] solvedBoard, int debug_level) {
         int num_rows = solvedBoard.length, num_columns = solvedBoard[0].length;
-        Loopover puzzle = new Loopover(mixedUpBoard, debug);
-        if (debug)
+        Loopover puzzle = new Loopover(mixedUpBoard, debug_level>0);
+        if (debug_level>0)
             System.out.println("puzzle BEFORE solve: \n" + puzzle);
         for (int intended_row_num=0; intended_row_num < num_rows; intended_row_num++) {
             for (int intended_col_num=0; intended_col_num < num_columns; intended_col_num++) {
-                if (!puzzle.solvePosition(intended_row_num, intended_col_num, solvedBoard, debug)) {
-                    if (debug)
+                if (!puzzle.solvePosition(intended_row_num, intended_col_num, solvedBoard, debug_level>1)) {
+                    if (debug_level>0)
                         System.out.println("puzzle AT time of SURRENDER: \n" + puzzle);
                     return null;
                 }
             }
         }
-        if (debug)
+        if (debug_level>0)
             System.out.println("puzzle AFTER solve: \n" + puzzle);
         return puzzle.movelist;
     }
 
     public static boolean verifySolution(List<String> movelist, char[][] mixedUpBoard, char[][] solvedBoard){
-        return verifySolution(movelist, mixedUpBoard, solvedBoard, false);
+        return verifySolution(movelist, mixedUpBoard, solvedBoard, 0);
     }
-    public static boolean verifySolution(List<String> movelist, char[][] mixedUpBoard, char[][] solvedBoard, boolean printAll){
-        Loopover puzzle = new Loopover(mixedUpBoard, printAll);
+    public static boolean verifySolution(List<String> movelist, char[][] mixedUpBoard, char[][] solvedBoard, int debug_level){
+        boolean printAll = debug_level>0;
+        Loopover puzzle = new Loopover(mixedUpBoard, debug_level>1);
         if (printAll)
             System.out.println("Verification:\n============\npuzzle = \n" + puzzle);
         if (movelist == null) {
@@ -526,9 +590,13 @@ public class Loopover {
             else if (move.charAt(0) == 'D')
                 puzzle.moveToRow(handle.value, handle.down.row_num);
         }
+        if (printAll)
+            System.out.println("Got to: \n" + puzzle);
         for (Node node: puzzle.characterNodeHashMap.values())
             if (node.value != solvedBoard[node.row_num][node.col_num])
                 return false;
+        if (printAll)
+            System.out.println("Puzzle Verified Solved!\n==============\n");
         return true;
     }
 
@@ -576,7 +644,7 @@ public class Loopover {
             }
             else
                 System.out.println("out of range...");
-            System.out.println(l);
+            //System.out.println(l);
             System.out.println();
         }
         System.out.println("\nLeaving Interactive mode...\n");
