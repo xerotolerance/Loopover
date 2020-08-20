@@ -1,5 +1,5 @@
 # Loopover
-Solution to algorithm challenge posted here (https://www.codewars.com/kata/5c1d796370fee68b1e000611) by user jaybruce1998. Coded in Java 9 by Cj Maxwell in Aug 2020.
+Solution to algorithm challenge posted here (https://www.codewars.com/kata/5c1d796370fee68b1e000611) by user jaybruce1998. Coded in Java 11 by Cj Maxwell in Aug 2020.
 
 Challenge Description: 
 ======================  
